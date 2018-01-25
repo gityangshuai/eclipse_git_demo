@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="  
+        http://www.springframework.org/schema/beans   
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd">  
+    
+    <bean id = "hydroDataStub" class="de.kisters.dep.webservice.HydroDataStub"/> 
+    <bean id = "baseInfoStub" class="de.kisters.dep.webservice.BaseInfoStub"/>
+    <bean id = "privilegeControlStub" class="de.kisters.dep.webservice.PrivilegeControlStub"/>
+    <bean id = "configInfoStub" class="de.kisters.dep.webservice.ConfigInfoStub"/>
+    <bean id = "endpointReference" class="org.apache.axis2.addressing.EndpointReference">
+    	<constructor-arg>
+    		<!-- <value>http://172.20.50.90:8090/PudongDEP/services</value> -->
+    		<value>http://172.20.50.90:8090/PudongDEP/services</value>
+    	</constructor-arg>
+    </bean>
+    
+    <!-- <bean id = "configInfoPortType" class="de.kisters.dep.webservice de.kisters.dep.webservice.ConfigInfoPortType"/>
+    <bean id = "hydroDataPortType" class="org.apache.axis2.addressing.EndpointReference"/>
+    <bean id = "hydroDataPortType" class="de.kisters.dep.webservice.HydroDataPortType"/>
+    <bean id = "hydroDataPortType" class="de.kisters.dep.webservice.HydroDataPortType"/>
+    <bean id = "hydroDataPortType" class="de.kisters.dep.webservice.HydroDataPortType"/> -->
+     
+</beans>  

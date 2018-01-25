@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+            http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+	<!-- 缓存监测数据 -->
+	<bean id="jcData" class="com.wavenet.rcs.redisquartz.JcDataQuartz"></bean>
+	
+	<!-- 统计数据-村居 -->
+    <bean id="countData" class="com.wavenet.rcs.countquartz.CountQuartz"></bean>
+	
+	<!-- 统计数据-街镇 -->
+    <bean id="countJzData" class="com.wavenet.rcs.countquartz.JzCountQuartz"></bean>
+    
+	<!-- 监测执行方法 -->
+	<bean id="getJcData"
+		class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject">
+			<ref bean="jcData" />
+		</property>
+		<property name="targetMethod">
+			<value>initJcData</value>
+		</property>
+	</bean>
+	
+	<!-- 统计数据执行方法-村居 -->
+    <bean id="getCountData"
+        class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject">
+            <ref bean="countData" />
+        </property>
+        <property name="targetMethod">
+            <value>work</value>
+        </property>
+    </bean>
+    
+    <!-- 统计数据执行方法-街镇 -->
+    <bean id="getJzCountData"
+        class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject">
+            <ref bean="countJzData" />
+        </property>
+        <property name="targetMethod">
+            <value>work</value>
+        </property>
+    </bean>
+	
+	<!-- 每五分钟执行一次 -->
+	<bean id="insertJcDataToRedis"
+		class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail">
+			<ref bean="getJcData" />
+		</property>
+		<property name="cronExpression">
+			<value> 0 3/5 * * * ? </value>
+		</property>
+	</bean>
+	
+	<!-- 每周末晚上11点50分执行一次统计信息 -->
+    <bean id="insertCountData"
+        class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail">
+            <ref bean="getCountData" />
+        </property>
+        <property name="cronExpression">
+            <value> 0 50 23 ? * 1 </value>
+            <!-- <value> 20 0/3 * * * ? </value> -->
+        </property>
+    </bean>
+    
+    <!-- 每月底晚上11点30分执行一次统计信息-街镇 -->
+    <bean id="insertJzCountData" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+        <property name="jobDetail">
+            <ref bean="getJzCountData" />
+        </property>
+        <property name="cronExpression">
+            <!-- <value> 0 58 17 ? * 2 </value> -->
+            <value> 20 30 23 L * ? </value>
+        </property>
+    </bean>
+	
+	<!-- 启动触发器的配置开始 -->
+	<bean name="startQuertz" lazy-init="false" autowire="no"
+		class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<!-- <ref bean="insertJcDataToRedis" />
+				<ref bean="insertJzCountData"/> -->
+				<!-- <ref bean="insertCountData" /> -->
+			</list>
+		</property>
+	</bean>
+
+</beans>

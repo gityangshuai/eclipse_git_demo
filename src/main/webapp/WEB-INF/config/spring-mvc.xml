@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>  
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:context="http://www.springframework.org/schema/context"     
+       xmlns:mvc="http://www.springframework.org/schema/mvc"   
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:websocket="http://www.springframework.org/schema/websocket"  
+       xsi:schemaLocation="  
+        http://www.springframework.org/schema/beans   
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+        http://www.springframework.org/schema/context   
+        http://www.springframework.org/schema/context/spring-context-4.2.xsd    
+        http://www.springframework.org/schema/mvc   
+        http://www.springframework.org/schema/mvc/spring-mvc-4.2.xsd">  
+     
+    <context:component-scan base-package="com.wavenet.*.web">
+        <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+    </context:component-scan>
+    <mvc:annotation-driven>  
+        <mvc:message-converters>  
+            <bean class="org.springframework.http.converter.ByteArrayHttpMessageConverter" />  
+            <bean class="org.springframework.http.converter.FormHttpMessageConverter" />  
+            <bean class="org.springframework.http.converter.xml.SourceHttpMessageConverter" />  
+            <!--<bean class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter" />-->  
+            <bean class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter" />  
+        </mvc:message-converters>  
+    </mvc:annotation-driven> 
+     
+    <mvc:default-servlet-handler/>
+    
+    <!-- 避免IE执行AJAX时,返回JSON出现下载文件   支持JSON数据格式 -->  
+    <bean  class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">  
+        <property name="messageConverters">  
+            <list>  
+                <bean class="org.springframework.http.converter.ByteArrayHttpMessageConverter"/><!-- 解析导出文件byte流 -->   
+                <ref bean="fastJsonHttpMessageConverter" />  
+                <!-- <ref bean="mappingJacksonHttpMessageConverter" />  -->
+            </list>  
+        </property>  
+    </bean>  
+    <!-- 使用fastJson来支持JSON数据格式 -->  
+    <bean id="fastJsonHttpMessageConverter" class="com.alibaba.fastjson.support.spring.FastJsonHttpMessageConverter">  
+          <property name="supportedMediaTypes">  
+              <list>  
+                  <value>application/json;charset=UTF-8</value>  
+                  <value>text/html;charset=UTF-8</value>  
+              </list>  
+          </property>  
+          <property name="features">  
+              <list>  
+                  <value>WriteMapNullValue</value>  
+                  <value>QuoteFieldNames</value>  
+              </list>  
+          </property>  
+      </bean>  
+    
+    <mvc:resources mapping="/static/**" location="/,/static/" />
+    <mvc:resources mapping="/uploadimg/**" location="/,/uploadimg/" />
+    
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">  
+        <property name="prefix" value="/WEB-INF/views/" /> 
+        <property name="suffix" value=".jsp" /> 
+    </bean>
+    <bean id="multipartResolver" class="org.springframework.web.multipart.commons.CommonsMultipartResolver">  
+        <property name="maxUploadSizePerFile" value="500000000" /> 
+        <property name="defaultEncoding" value="UTF-8"></property>
+        <property name="resolveLazily" value="true"></property> 
+    </bean> 
+     <!--配置Freemarker start-->
+    <bean id="freemarkerConfigurer"
+      class="org.springframework.web.servlet.view.freemarker.FreeMarkerConfigurer">
+      <property name="templateLoaderPath" value="static/file/template/" />
+      <property name="freemarkerSettings">
+        <props>
+          <prop key="template_update_delay">10</prop>
+          <prop key="defaultEncoding">UTF-8</prop>
+        </props>
+      </property>
+    </bean>
+    
+    <bean id="viewResolver" class="org.springframework.web.servlet.view.freemarker.FreeMarkerViewResolver">
+        <property name="viewNames">
+            <array>
+                <value>*.ftl</value>
+            </array>
+        </property>
+        <property name="cache" value="true" />
+        <property name="prefix" value="static/file/template/" />
+        <property name="suffix" value=".ftl" />
+    </bean>
+    <!--配置Freemarker end -->
+    
+</beans>  

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:repository="http://www.springframework.org/schema/data/repository"
+	xsi:schemaLocation="  
+        http://www.springframework.org/schema/beans   
+        http://www.springframework.org/schema/beans/spring-beans-4.2.xsd   
+        http://www.springframework.org/schema/context   
+        http://www.springframework.org/schema/context/spring-context-4.2.xsd   
+        http://www.springframework.org/schema/data/repository 
+        http://www.springframework.org/schema/data/repository/spring-repository.xsd
+        http://www.springframework.org/schema/tx   
+        http://www.springframework.org/schema/tx/spring-tx-4.2.xsd
+        http://www.springframework.org/schema/aop
+    	http://www.springframework.org/schema/aop/spring-aop-4.2.xsd">
+        
+    <context:component-scan base-package="com.wavenet">
+    	<context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller" />
+	</context:component-scan>
+    <bean id="propertyPlaceholderConfigurer" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>/WEB-INF/config/jdbc.properties</value>
+			</list>
+		</property>
+	</bean>  
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<property name="driverClass" value="${jdbc.driverClassName}"/>
+		<property name="jdbcUrl"  value="${jdbc.url}"/>
+		<property name="user" value="${jdbc.username}"/>
+		<property name="password" value="${jdbc.password}"/>
+		<property name="acquireIncrement" value="5"/>
+		<property name="idleConnectionTestPeriod" value="60"/>
+		<property name="maxPoolSize" value="100"/>
+		<property name="maxStatements" value="50"/>
+		<property name="minPoolSize" value="10"/>
+	</bean>
+	 
+	<!-- spring和MyBatis完美整合，不需要MyBatis的配置映射文件 -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- 自动扫描mapping.xml文件 -->
+        <property name="mapperLocations">
+            <array>
+                <value>classpath*:com/wavenet/sso/repository/mapper/*.xml</value>
+                <value>classpath*:com/wavenet/rcs/repository/mapper/*.xml</value>
+            </array>
+        </property>
+        <property name="typeAliasesPackage" value="com.wavenet.sso.repository.mode;com.wavenet.rcs.repository.mode"/>
+		<property name="configLocation" value="/WEB-INF/config/mybatis-config.xml"></property>
+		
+	</bean>
+	<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">
+		<constructor-arg ref="sqlSessionFactory" />
+	</bean>
+	<!-- DAO接口所在包名，Spring会自动查找其下的类 -->
+	<bean class="tk.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.wavenet.sso.repository;com.wavenet.rcs.repository" />
+		<property name="properties">
+		    <value>
+		          mappers=tk.mybatis.mapper.common.Mapper
+		          IDENTITY=select sys_guid() from dual
+                  ORDER=BEFORE
+		    </value>
+		</property>
+		<!-- <property name="markerInterface" value="tk.mybatis.mapper.common.Mapper"></property> -->
+		<property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"></property>
+	</bean>
+	 <!-- 事务控制 -->  
+	 <!-- (事务管理)transaction manager, use JtaTransactionManager for global tx -->
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+    <tx:advice id="userTxAdvice" transaction-manager="transactionManager">  
+        <tx:attributes>  
+            <tx:method name="remove*" propagation="REQUIRED" read-only="false" rollback-for="java.lang.Exception" no-rollback-for="java.lang.RuntimeException" />  
+            <tx:method name="delete*" propagation="REQUIRED" read-only="false" rollback-for="java.lang.Exception" no-rollback-for="java.lang.RuntimeException" />  
+            <tx:method name="add*" propagation="REQUIRED" read-only="false"  rollback-for="java.lang.RuntimeException" />  
+            <tx:method name="insert*" propagation="REQUIRED" read-only="false" rollback-for="java.lang.RuntimeException" />  
+            <tx:method name="save*" propagation="REQUIRED" read-only="false" rollback-for="java.lang.RuntimeException" />  
+            <tx:method name="update*" propagation="REQUIRED" read-only="false" rollback-for="java.lang.Exception" />  
+            <tx:method name="publish*" propagation="REQUIRED" read-only="false" rollback-for="java.lang.Exception" />  
+            <tx:method name="get*" propagation="SUPPORTS" read-only="true" />  
+            <tx:method name="list*" propagation="SUPPORTS" read-only="true" />  
+            <tx:method name="query*" propagation="SUPPORTS" read-only="true" />  
+            <tx:method name="find*" propagation="SUPPORTS" read-only="true" />  
+            <tx:method name="page*" propagation="SUPPORTS" read-only="true" />  
+        </tx:attributes>  
+    </tx:advice>  
+    <tx:annotation-driven transaction-manager="transactionManager"/>  
+    <aop:config>  
+        <aop:pointcut id="pc" expression="execution(public * com.wavenet.*.service.*.*(..))" />  
+        <aop:advisor pointcut-ref="pc" advice-ref="userTxAdvice" />  
+    </aop:config>  
+</beans>  

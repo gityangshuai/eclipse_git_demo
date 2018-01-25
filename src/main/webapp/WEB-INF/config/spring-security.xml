@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans-4.2.xsd
+           http://www.springframework.org/schema/security
+           http://www.springframework.org/schema/security/spring-security-4.2.xsd">
+	
+	<global-method-security pre-post-annotations="enabled" />
+	<beans:bean id="loggerListener" class="org.springframework.security.authentication.event.LoggerListener" />
+	
+	<!-- 不要过滤图片等静态资源，其中**代表可以跨越目录，*不可以跨越目录。 --> 
+	<http pattern="/**/*.jpg" security="none" />
+	<http pattern="/**/*.png" security="none" />
+	<http pattern="/**/*.gif" security="none" />
+	<http pattern="/**/*.css" security="none" />
+	<http pattern="/**/*.js" security="none" />
+	<http pattern="/login/view" security="none" />
+	<!-- <http pattern="/rivs" security="none" /> -->
+	<http pattern="/static/**" security="none"/>
+	<http pattern="/uploadimg/**" security="none"/>
+	<http pattern="/caseinfo/test" security="none"/>
+	<!-- <http pattern="/map/swxx" security="none"/> -->
+	
+	<http use-expressions="false" ><!-- entry-point-ref="authenticationProcessingFilterEntryPoint" -->
+        <!-- <intercept-url pattern="/**" access="authenticated"/> -->
+        <form-login login-page="/login/view"
+                    default-target-url="summary/view" 
+                    always-use-default-target="true"
+                    username-parameter="username"
+                    password-parameter="password"
+                    authentication-success-handler-ref="authenticationSuccessHandler"
+                    authentication-failure-handler-ref="authenticationFailureHandler"/>
+        <logout invalidate-session="true"  logout-url="/login/out" logout-success-url="/login/view"/>
+        <csrf disabled="true"/>
+        <headers>
+            <frame-options policy="SAMEORIGIN"/>
+        </headers>
+        <custom-filter before="FILTER_SECURITY_INTERCEPTOR" ref="urlSecurityFilter"/>
+        <!-- SESSION超时后跳转到该页面 -->  
+        <session-management invalid-session-url="/login/view">  
+        </session-management>
+    </http>
+    
+     <!-- 配置自定义过滤器 -->
+   <!--  <beans:bean id="loginFilter" class="com.test.security.LoginFilter">
+        <beans:property name="filterProcessesUrl" value="/login.json"/>
+        <beans:property name="usernameParameter" value="userName"/>
+        <beans:property name="authenticationManager" ref="authenticationManager"/>
+        <beans:property name="authenticationSuccessHandler" ref="authenticationSuccessHandler"/>
+        <beans:property name="authenticationFailureHandler" ref="authenticationFailureHandler"/>
+    </beans:bean>  -->
+    <!-- 一个自定义的filter，必须包含authenticationManager,accessDecisionManager,securityMetadataSource三个属性，  我们的所有控制将在这三个类中实现，解释详见具体配置 -->
+    <beans:bean id="urlSecurityFilter" class="com.wavenet.sso.filter.WavenetSecurityFilter">
+       <!--  用户拥有的权限 -->
+        <beans:property name="authenticationManager" ref="wavenetAuthenticationManager" />
+        <!-- 用户是否拥有所请求资源的权限 -->
+        <beans:property name="accessDecisionManager" ref="wavenetAccessDecisionManager" />
+       <!--  资源与权限对应关系 -->
+        <beans:property name="securityMetadataSource" ref="wavenetSecurityMetadataSource" />
+    </beans:bean>
+    <beans:bean id="wavenetAccessDecisionManager" class="com.wavenet.sso.filter.WavenetAccessDecisionManager" />
+    <beans:bean id="wavenetSecurityMetadataSource"  class="com.wavenet.sso.filter.WavenetSecurityMetadataSource">
+        <beans:constructor-arg name="orgResService" ref="orgResService">
+        </beans:constructor-arg>
+    </beans:bean>
+   <authentication-manager alias="wavenetAuthenticationManager">  
+        <authentication-provider ref="daoAuthenticationProvider"/>
+    </authentication-manager>
+    
+    <beans:bean id="daoAuthenticationProvider" class="org.springframework.security.authentication.dao.DaoAuthenticationProvider">
+        <!-- 是否显示用戶名不存在信息 -->
+        <beans:property name="hideUserNotFoundExceptions" value="false"/>
+        <beans:property name="userDetailsService" ref="userDetailService"/>
+        <beans:property name="passwordEncoder" ref="md5Encoder"/>
+    </beans:bean>
+    <beans:bean id="userDetailService" class="com.wavenet.sso.service.UserDetailServiceImpl" />
+    <beans:bean id="md5Encoder" class="org.springframework.security.authentication.encoding.Md5PasswordEncoder" />
+    <!-- 未登录请求资源返回登录页面 -->
+    <!-- <beans:bean id="authenticationProcessingFilterEntryPoint" class="org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint">
+        <beans:property name="loginFormUrl" value="/login/view"></beans:property>
+    </beans:bean> -->
+    <!-- 登录失败处理，返回登录页面 -->
+	<beans:bean id="authenticationFailureHandler" class="com.wavenet.sso.filter.LoginAuthenticationFailureHandler">
+		<beans:property name="defaultFailureUrl" value="/login/view" />
+	</beans:bean>
+	<!-- 登录成功处理，将用户信息存入session org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler-->
+	<beans:bean id="authenticationSuccessHandler" class="com.wavenet.sso.filter.LoginAuthenticationSuccessHandler"/>
+</beans:beans>
+
+
